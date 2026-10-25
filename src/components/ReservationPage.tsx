@@ -29,10 +29,20 @@ export default function ReservationPage({ prices, stock, onReserve, onBack }: Re
 
   const maxUnits = Math.floor(availableStock / getEggsPerUnit(quantity));
 
-  const timeSlots = [
-    '08:00', '09:00', '10:00', '11:00', '12:00',
-    '13:00', '14:00', '16:00', '17:00', '18:00', '19:00'
-  ];
+  const generateTimeSlots = () => {
+    const slots: string[] = [];
+    for (let h = 8; h <= 20; h++) {
+      for (let m = 0; m < 60; m += 15) {
+        if (h === 20 && m > 0) break;
+        const hour = h.toString().padStart(2, '0');
+        const min = m.toString().padStart(2, '0');
+        slots.push(`${hour}:${min}`);
+      }
+    }
+    return slots;
+  };
+
+  const timeSlots = generateTimeSlots();
 
   const getMinDate = () => {
     const tomorrow = new Date();
@@ -275,23 +285,26 @@ export default function ReservationPage({ prices, stock, onReserve, onBack }: Re
             </div>
 
             <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Hora</label>
-              <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                {timeSlots.map((time) => (
-                  <button
-                    key={time}
-                    onClick={() => setPickupTime(time)}
-                    className={`p-2 rounded-lg border text-sm font-medium transition-all ${
-                      pickupTime === time
-                        ? 'border-amber-500 bg-amber-50 text-amber-700'
-                        : 'border-gray-200 hover:border-gray-300 text-gray-600'
-                    }`}
-                  >
-                    <Clock className="w-3 h-3 inline mr-1" />
-                    {time}
-                  </button>
-                ))}
+              <label className="block text-sm font-medium text-gray-700 mb-2">Hora de recogida</label>
+              <div className="relative">
+                <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <select
+                  value={pickupTime}
+                  onChange={(e) => setPickupTime(e.target.value)}
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent appearance-none bg-white text-gray-800"
+                >
+                  <option value="">Selecciona una hora</option>
+                  {timeSlots.map((time) => (
+                    <option key={time} value={time}>{time}</option>
+                  ))}
+                </select>
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
               </div>
+              <p className="text-sm text-gray-500 mt-1">Horario de recogida: 08:00 - 20:00 (intervalos de 15 min).</p>
             </div>
 
             <div className="flex gap-4">
@@ -302,8 +315,24 @@ export default function ReservationPage({ prices, stock, onReserve, onBack }: Re
                 ← Atrás
               </button>
               <button
-                onClick={() => { setError(''); setStep(3); }}
-                className="flex-1 bg-amber-600 hover:bg-amber-700 text-white font-bold py-3 px-6 rounded-full transition-all"
+                onClick={() => {
+                  setError('');
+                  if (!pickupDate) {
+                    setError('Por favor, selecciona una fecha de recogida.');
+                    return;
+                  }
+                  if (!pickupTime) {
+                    setError('Por favor, selecciona una hora de recogida.');
+                    return;
+                  }
+                  setStep(3);
+                }}
+                disabled={!pickupDate || !pickupTime}
+                className={`flex-1 font-bold py-3 px-6 rounded-full transition-all ${
+                  !pickupDate || !pickupTime
+                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    : 'bg-amber-600 hover:bg-amber-700 text-white'
+                }`}
               >
                 Siguiente →
               </button>
